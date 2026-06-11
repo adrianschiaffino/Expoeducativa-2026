@@ -612,6 +612,10 @@ function loadData() {
       const rows = [header, ...rowsRaw.map(r =>
         r.c.map(cell => {
           if (!cell || cell.v === null || cell.v === undefined) return '';
+          // Para fechas, usar el valor formateado (f) si existe, sino convertir v
+          if (cell.f) return String(cell.f);
+          // Si v es un objeto Date de gviz, convertir a string legible
+          if (typeof cell.v === 'object' && cell.v !== null) return String(cell.v);
           return String(cell.v);
         })
       )];
