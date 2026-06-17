@@ -258,7 +258,7 @@ const SHEET_ID = "151j2Enmj4Jm-eK0WjcW1ApP2uwPlpvzG6Hd8VJjLxSk";
 const GID      = "1044830372";
 
 // Índices de columna (0-based)
-const C = { ts:0, p1:1, p2:2, p3:3, p4:4, mentePlan:5, carreraEsp:6, p6:7, p7:8, comentario:9, nombre:10, escuela:11, celular:12, mail:13 };
+const C = { ts:0, p1:1, p2:2, p3:3, p4:4, mentePlan:6, carreraEsp:7, p6:8, p7:9, comentario:10, nombre:11, escuela:12, celular:13, mail:14 };
 
 // ─── ESTADO ──────────────────────────────────────────────
 let D = {}, TOTAL = 0, charts = {};
@@ -387,7 +387,6 @@ function normCarrera(raw) {
   for (const [grupo, kws] of CARRERA_GRUPOS) {
     if (kws.some(k => l.includes(k))) return grupo;
   }
-  // Si no matchea ningún grupo, capitalizar la primera letra
   return raw.charAt(0).toUpperCase() + raw.slice(1).toLowerCase();
 }
 
