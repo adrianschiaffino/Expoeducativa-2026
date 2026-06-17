@@ -258,7 +258,7 @@ const SHEET_ID = "151j2Enmj4Jm-eK0WjcW1ApP2uwPlpvzG6Hd8VJjLxSk";
 const GID      = "1044830372";
 
 // Índices de columna (0-based)
-const C = { ts:0, p1:1, p2:2, p3:3, p4:4, mentePlan:5, carreraEsp:6, p6:7, p7:8, comentario:9, nombre:10, escuela:11, celular:12, mail:13 };
+const C = { ts:0, p1:1, p2:2, p3:3, p4:4, mentePlan:6, carreraEsp:7, p6:8, p7:9, comentario:10, nombre:11, escuela:12, celular:13, mail:14 };
 
 // ─── ESTADO ──────────────────────────────────────────────
 let D = {}, TOTAL = 0, charts = {};
@@ -346,10 +346,54 @@ function categorizePregunta(q) {
   return 'Otras preguntas';
 }
 
+// ─── NORMALIZACIÓN DE CARRERAS ──────────────────────────────────────
+const CARRERA_GRUPOS = [
+  ['Medicina', ['medicina','medic','doctor','médico','medico']],
+  ['Enfermería', ['enferm']],
+  ['Kinesiología', ['kinesio','kinesiolog','kine']],
+  ['Odontología', ['odontol','odont','dentist']],
+  ['Farmacia', ['farmac']],
+  ['Veterinaria', ['veterinar','veteri','vet']],
+  ['Psicología', ['psicolog','psico']],
+  ['Nutrición', ['nutrici','nutric']],
+  ['Ingeniería Agronómica', ['agrónom','agronom','agrícol','agraria','ingeniería agro','ingenieria agro']],
+  ['Ingeniería Industrial', ['industrial']],
+  ['Ingeniería Civil', ['civil']],
+  ['Ingeniería en Sistemas', ['sistem','informátic','informatic','computaci','software','programac']],
+  ['Ingeniería Mecánica', ['mecánic','mecanic']],
+  ['Ingeniería Eléctrica', ['eléctric','electric']],
+  ['Ingeniería Química', ['químic','quimic']],
+  ['Arquitectura', ['arquitect']],
+  ['Abogacía / Derecho', ['abogac','derecho','jurídic']],
+  ['Administración / Negocios', ['administrac','administ','comercio','negocios','business','contador','contad','contabilid']],
+  ['Diseño', ['diseño','diseñ','diseñador']],
+  ['Arte / Música', ['arte','artístic','música','music','baile','danza','teatro','actor']],
+  ['Educación / Docencia', ['docencia','docente','maestr','educaci','pedagog','profesor','profesorado']],
+  ['Comunicación / Periodismo', ['comunic','periodism','publicidad','marketing']],
+  ['Piloto / Aeronáutica', ['pilot','aeronáut','aeronauti','aviaci','vuelo']],
+  ['Tripulante de Cabina', ['tripulante','azafat','cabin crew','flight']],
+  ['Psicopedagogía', ['psicopedag']],
+  ['Trabajo Social', ['trabajo social','servicio social']],
+  ['Biología / Bioquímica', ['biolog','bioquím','bioquim']],
+  ['Gastronomía / Chef', ['gastronom','chef','cocina','culinari']],
+  ['Turismo / Hotelería', ['turismo','hoteler','viaje']],
+  ['Deporte / Educación Física', ['educación física','educacion fisica','deport','futbol','fútbol','fitness','gym']],
+  ['Militar / Policía', ['militar','ejército','ejercito','policía','policia','gendarme','marina']],
+  ['Electricista / Técnico', ['electric','técnic','tecnic','electronica','electrónic']],
+];
+
+function normCarrera(raw) {
+  const l = raw.toLowerCase().trim();
+  for (const [grupo, kws] of CARRERA_GRUPOS) {
+    if (kws.some(k => l.includes(k))) return grupo;
+  }
+  return raw.charAt(0).toUpperCase() + raw.slice(1).toLowerCase();
+}
+
 // ─── PROCESAR FILAS ──────────────────────────────────────
 function processRows(rows) {
   // rows[0] = header, skip
-  const data = rows.slice(1).filter(r => r.length > 4);
+  const data = rows.slice(1).filter(r => r.length > 4 && (r[C.escuela]||'').trim());
   TOTAL = data.length;
 
   const p1={}, p2all={}, p2m={}, p2f={}, p3={};
@@ -395,11 +439,11 @@ function processRows(rows) {
     else if (vm.includes('varia')||vm.includes('no me decid')) mentePlan['Varias ideas']++;
     else mentePlan['No']++;
 
-    // Carrera específica
+    // Carrera específica — normalización por agrupación
     const ce=(r[C.carreraEsp]||'').trim();
     if (ce.length>1) {
-      const n=ce[0].toUpperCase()+ce.slice(1).toLowerCase();
-      carreras[n]=(carreras[n]||0)+1;
+      const norm = normCarrera(ce);
+      carreras[norm]=(carreras[norm]||0)+1;
     }
 
     // P6 preguntas
@@ -421,16 +465,18 @@ function processRows(rows) {
     if (g==='F') expoF[expKey]++;
 
     // Escuelas
-    const escRaw=(r[C.escuela]||'').trim();
-    const esc = escRaw ? escRaw[0].toUpperCase()+escRaw.slice(1) : 'No especificada';
-    escuelas[esc]=(escuelas[esc]||0)+1;
+    const esc=(r[C.escuela]||'').trim();
+    if (esc) {
+      const en=esc[0].toUpperCase()+esc.slice(1);
+      escuelas[en]=(escuelas[en]||0)+1;
+    }
 
     // Contactos
     const cel=(r[C.celular]||'').trim(), mail=(r[C.mail]||'').trim();
     const hasCel=cel.length>3, hasMail=mail.length>4&&mail.includes('@');
     if (hasCel) conCel++;
     if (hasMail) conMail++;
-    if (hasCel&&hasMail) { conAmbos++; escContacto[esc]=(escContacto[esc]||0)+1; }
+    if (hasCel&&hasMail) { conAmbos++; if(esc){ const en=esc[0].toUpperCase()+esc.slice(1); escContacto[en]=(escContacto[en]||0)+1; } }
     if (!hasCel&&!hasMail) sinNada++;
   });
 
@@ -610,10 +656,6 @@ function loadData() {
       const rows = [header, ...rowsRaw.map(r =>
         r.c.map(cell => {
           if (!cell || cell.v === null || cell.v === undefined) return '';
-          // Para fechas, usar el valor formateado (f) si existe, sino convertir v
-          if (cell.f) return String(cell.f);
-          // Si v es un objeto Date de gviz, convertir a string legible
-          if (typeof cell.v === 'object' && cell.v !== null) return String(cell.v);
           return String(cell.v);
         })
       )];
