@@ -393,7 +393,7 @@ function normCarrera(raw) {
 // ─── PROCESAR FILAS ──────────────────────────────────────
 function processRows(rows) {
   // rows[0] = header, skip
-  const data = rows.slice(1).filter(r => r.length > 4 && (r[C.p1]||'').trim());
+  const data = rows.slice(1).filter(r => r.length > 0 && r.some(v => v && v.trim()));
   TOTAL = data.length;
 
   const p1={}, p2all={}, p2m={}, p2f={}, p3={};
@@ -411,9 +411,15 @@ function processRows(rows) {
     const g = gender(r[C.nombre]||'');
     if (g==='M') nM++; else if (g==='F') nF++;
 
-    // P1
+    // P1 — solo opciones válidas del formulario
+    const P1_VALIDAS = new Set([
+      'Carrera universitaria','Carrera terciaria','Trabajar y estudiar al mismo tiempo',
+      'Trabajar','Oficio / capacitación técnica','Aún no lo sé','No sé todavía',
+      'Hacer un oficio','Todavía no lo sé'
+    ]);
     const v1 = (r[C.p1]||'').trim();
-    if (v1) p1[v1]=(p1[v1]||0)+1;
+    if (v1 && P1_VALIDAS.has(v1)) p1[v1]=(p1[v1]||0)+1;
+    else if (v1 && v1.length < 60) p1[v1]=(p1[v1]||0)+1; // aceptar respuestas cortas válidas
 
     // P2 múltiple
     (r[C.p2]||'').split(',').map(s=>s.trim()).filter(Boolean).forEach(a=>{
