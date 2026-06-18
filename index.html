@@ -393,7 +393,7 @@ function normCarrera(raw) {
 // ─── PROCESAR FILAS ──────────────────────────────────────
 function processRows(rows) {
   // rows[0] = header, skip
-  const data = rows.slice(1).filter(r => r.length > 4);
+  const data = rows.slice(1).filter(r => r.length > 4 && (r[C.p1]||'').trim());
   TOTAL = data.length;
 
   const p1={}, p2all={}, p2m={}, p2f={}, p3={};
@@ -654,7 +654,10 @@ function loadData() {
       const rows = [header, ...rowsRaw.map(r =>
         r.c.map(cell => {
           if (!cell || cell.v === null || cell.v === undefined) return '';
-          return String(cell.v);
+          if (cell.f) return String(cell.f);
+          if (typeof cell.v === 'object') return String(cell.v);
+          const s = String(cell.v);
+          return s === 'null' ? '' : s;
         })
       )];
 
