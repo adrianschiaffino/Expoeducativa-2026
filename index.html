@@ -643,6 +643,8 @@ function showTab(id, el) {
 // ─── CARGA DATOS ─────────────────────────────────────────
 // Usamos la API de Visualización de Google (gviz/tq) que NO tiene restricciones CORS
 // para planillas publicadas. Devuelve JSONP-like que parseamos.
+let dataLoaded = false;
+
 function loadData() {
   $('load-sub').textContent = 'Contactando Google Sheets…';
 
@@ -671,6 +673,7 @@ function loadData() {
       )];
 
       $('load-sub').textContent = `Procesando ${rows.length - 1} respuestas…`;
+      dataLoaded = true;
       const d = processRows(rows);
       render(d);
       const ov = $('loading-overlay');
@@ -682,7 +685,7 @@ function loadData() {
       $('load-sub').textContent = 'Intentando acceso directo al CSV…';
       fetch('https://docs.google.com/spreadsheets/d/e/2PACX-1vRROYYQaxT1oaa_QYWjvH2bgR5zIjFC0_eeNwnjsiPoGxTGzhY4CDFonp6sbdVtaHyuHVyGTLWS6WVA/pub?gid=1044830372&single=true&output=csv')
         .then(r => r.text())
-        .then(csvText => parseCSV(csvText))
+        .then(csvText => { if (!dataLoaded) parseCSV(csvText); })
         .catch(() => showError());
     });
 }
@@ -700,6 +703,7 @@ function parseCSV(text) {
     result.push(cur);
     return result;
   });
+  dataLoaded = true;
   const d = processRows(rows);
   render(d);
   $('loading-overlay').classList.add('hidden');
